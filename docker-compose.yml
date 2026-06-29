@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: elegante_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: amir
+      POSTGRES_PASSWORD: amir123
+      POSTGRES_DB: elegante
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: ./api
+    container_name: elegante_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://amir:amir123@db:5432/elegante
+      ANTHROPIC_API_KEY:
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
