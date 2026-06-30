@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:latest
+    image: postgres:16
     container_name: elegante_postgres_db
     restart: always
     environment:
@@ -22,9 +22,12 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://amir:amir123@db:5432/elegante
-      ANTHROPIC_API_KEY:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     depends_on:
       - db
+    volumes:
+      - ./api:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:
   pgdata:
