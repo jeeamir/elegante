@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException
-from schemas import UserProfile, OutfitRequest
+from schemas import UserProfile, OutfitRequest, OutfitHistoryResponse
 from sqlalchemy.orm import Session
 import models
 from database import Base, engine, get_db
 from ai_service import get_outfit_recommendation
+from typing import List
 
 
 
@@ -33,14 +34,35 @@ async def create_profile(profile: UserProfile, db: Session = Depends(get_db)):
     db.refresh(new_profile)
     return new_profile
 
-@app.post("/outfits")
+@app.post("/outfits", response_model=OutfitHistoryResponse)
 async def get_outfit(request: OutfitRequest, db: Session = Depends(get_db)):
     profile = db.query(models.UserProfile).filter(models.UserProfile.id == request.profile_id).first()
 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    return get_outfit_recommendation(profile=profile, occasion=request.occasion, mood=request.mood)
+    result = get_outfit_recommendation(profile=profile, occasion=request.occasion, mood=request.mood)
+
+    outfit_history = models.OutfitHistory(
+        profile_id=request.profile_id,
+        occasion=request.occasion,
+        mood=request.mood,
+        result=result,
+    )
+
+    db.add(outfit_history)
+    db.commit()
+    db.refresh(outfit_history)
+    return outfit_history
+
+@app.get("/profile/{profile_id}/history", response_model=List[OutfitHistoryResponse])
+async def get_outfits(profile_id: int, db: Session = Depends(get_db)):
+    history = db.query(models.OutfitHistory).filter(models.OutfitHistory.profile_id == profile_id).all()
+
+    return history
+
+
+
 
 
 
