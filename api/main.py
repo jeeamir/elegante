@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
+
 from schemas import UserProfile, OutfitRequest, OutfitHistoryResponse
 from sqlalchemy.orm import Session
 import models
 from database import Base, engine, get_db
-from ai_service import get_outfit_recommendation
+from ai_service import get_outfit_recommendation, encode_image, get_photo_feedback, get_wardrobe_analysis
 from typing import List
 
 
@@ -60,6 +61,40 @@ async def get_outfits(profile_id: int, db: Session = Depends(get_db)):
     history = db.query(models.OutfitHistory).filter(models.OutfitHistory.profile_id == profile_id).all()
 
     return history
+
+@app.post("/wardrobe/analyze-photo")
+async def analyze_photo(profile_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+
+    profile = db.query(models.UserProfile).filter(models.UserProfile.id == profile_id).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    base64_image, media_type = await encode_image(file)
+
+    result = get_wardrobe_analysis(base64_image=base64_image, media_type=media_type)
+
+    wardrobe = []
+
+    for item in result["items"]:
+        wardrobe_item = models.WardrobeItem(profile_id=profile_id, **item)
+        db.add(wardrobe_item)
+        wardrobe.append(wardrobe_item)
+
+    db.commit()
+
+    for item in wardrobe:
+        db.refresh(item)
+
+
+    return wardrobe
+
+
+
+
+
+
+
 
 
 
