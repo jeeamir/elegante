@@ -73,12 +73,52 @@ class OutfitHistoryResponse(BaseModel):
         from_attributes = True
 
 
+
 class OutfitFeedback(BaseModel):
     overall_score: int
     color_match: str
     fit_assessment: str
     strengths: List[str]
     improvements: List[str]
+
+
+class WardrobeItemAnalysis(BaseModel):
+    item: str
+    color: str
+    material: str
+    fit: str
+    category: str
+
+class PhotoFeedbackResponse(BaseModel):
+    id: int
+    profile_id: int
+    occasion: str
+    feedback: dict
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class WardrobeItemResponse(BaseModel):
+    id: int
+    profile_id: int
+    item: str
+    color: str
+    material: str
+    fit: str
+    category: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class WardrobeAnalysisResponse(BaseModel):
+    items: List[WardrobeItemAnalysis]
+
+
+
+
 
 
 
