@@ -3,6 +3,11 @@ import os
 from schemas import OutfitResponse, WardrobeAnalysisResponse, OutfitFeedback
 import base64
 from fastapi import UploadFile
+from PIL import Image
+import pillow_heif
+import io
+
+pillow_heif.register_heif_opener()
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
@@ -46,8 +51,15 @@ def get_outfit_recommendation(profile, occasion, mood=None):
 
 async def encode_image(file: UploadFile) -> tuple[str, str]:
     contents = await file.read()
-    base64_string = base64.b64encode(contents).decode("utf-8")
-    media_type = file.content_type
+
+    image = Image.open(io.BytesIO(contents))
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    jpeg_bytes = buffer.getvalue()
+
+    base64_string = base64.b64encode(jpeg_bytes).decode("utf-8")
+    media_type = "image/jpeg"
 
     return (base64_string, media_type)
 
@@ -101,7 +113,7 @@ def get_photo_feedback(profile, occasion, base64_image, media_type):
 
     return message.content[0].input
 
-def get_wardrobe_analysis(profile, base64_image, media_type):
+def get_wardrobe_analysis(base64_image, media_type):
 
     schema = WardrobeAnalysisResponse.model_json_schema()
 

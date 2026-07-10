@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
 
-from schemas import UserProfile, OutfitRequest, OutfitHistoryResponse
+from schemas import UserProfile, OutfitRequest, OutfitHistoryResponse, PhotoFeedbackResponse
 from sqlalchemy.orm import Session
 import models
 from database import Base, engine, get_db
@@ -88,6 +88,38 @@ async def analyze_photo(profile_id: int, file: UploadFile = File(...), db: Sessi
 
 
     return wardrobe
+
+
+@app.post("/outfits/photo-feedback", response_model=PhotoFeedbackResponse)
+async def photo_feedback(profile_id: int, occasion: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+
+    profile = db.query(models.UserProfile).filter(models.UserProfile.id == profile_id).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    base64_image, media_type = await encode_image(file)
+
+    result = get_photo_feedback(base64_image=base64_image, media_type=media_type, occasion=occasion, profile=profile)
+
+    feedback = models.PhotoFeedback(
+        profile_id=profile_id,
+        occasion=occasion,
+        feedback=result
+    )
+
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    return feedback
+
+
+
+
+
+
+
 
 
 
