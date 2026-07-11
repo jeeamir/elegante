@@ -1,19 +1,16 @@
-from fastapi import FastAPI, Depends, HTTPException, File, UploadFile
-
-from schemas import UserProfile, OutfitRequest, OutfitHistoryResponse, PhotoFeedbackResponse
-from sqlalchemy.orm import Session
-import models
-from database import Base, engine, get_db
-from ai_service import get_outfit_recommendation, encode_image, get_photo_feedback, get_wardrobe_analysis
-from typing import List
-
-
+from fastapi import FastAPI
+from database import Base, engine
+from profiles.router import router as profiles_router
+from outfits.router import router as outfits_router
+from wardrobe.router import router as wardrobe_router
+from profiles import models as profile_models
+from outfits import models as outfit_models
+from wardrobe import models as wardrobe_models
 
 def init_db():
     Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Elegante AI Stylist")
-
 
 @app.on_event("startup")
 async def startup():
@@ -27,111 +24,6 @@ async def root():
 async def health():
     return {"status": "ok"}
 
-@app.post("/profile")
-async def create_profile(profile: UserProfile, db: Session = Depends(get_db)):
-    new_profile = models.UserProfile(**profile.model_dump())
-    db.add(new_profile)
-    db.commit()
-    db.refresh(new_profile)
-    return new_profile
-
-@app.post("/outfits", response_model=OutfitHistoryResponse)
-async def get_outfit(request: OutfitRequest, db: Session = Depends(get_db)):
-    profile = db.query(models.UserProfile).filter(models.UserProfile.id == request.profile_id).first()
-
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-
-    result = get_outfit_recommendation(profile=profile, occasion=request.occasion, mood=request.mood)
-
-    outfit_history = models.OutfitHistory(
-        profile_id=request.profile_id,
-        occasion=request.occasion,
-        mood=request.mood,
-        result=result,
-    )
-
-    db.add(outfit_history)
-    db.commit()
-    db.refresh(outfit_history)
-    return outfit_history
-
-@app.get("/profile/{profile_id}/history", response_model=List[OutfitHistoryResponse])
-async def get_outfits(profile_id: int, db: Session = Depends(get_db)):
-    history = db.query(models.OutfitHistory).filter(models.OutfitHistory.profile_id == profile_id).all()
-
-    return history
-
-@app.post("/wardrobe/analyze-photo")
-async def analyze_photo(profile_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-
-    profile = db.query(models.UserProfile).filter(models.UserProfile.id == profile_id).first()
-
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-
-    base64_image, media_type = await encode_image(file)
-
-    result = get_wardrobe_analysis(base64_image=base64_image, media_type=media_type)
-
-    wardrobe = []
-
-    for item in result["items"]:
-        wardrobe_item = models.WardrobeItem(profile_id=profile_id, **item)
-        db.add(wardrobe_item)
-        wardrobe.append(wardrobe_item)
-
-    db.commit()
-
-    for item in wardrobe:
-        db.refresh(item)
-
-
-    return wardrobe
-
-
-@app.post("/outfits/photo-feedback", response_model=PhotoFeedbackResponse)
-async def photo_feedback(profile_id: int, occasion: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
-
-    profile = db.query(models.UserProfile).filter(models.UserProfile.id == profile_id).first()
-
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-
-    base64_image, media_type = await encode_image(file)
-
-    result = get_photo_feedback(base64_image=base64_image, media_type=media_type, occasion=occasion, profile=profile)
-
-    feedback = models.PhotoFeedback(
-        profile_id=profile_id,
-        occasion=occasion,
-        feedback=result
-    )
-
-    db.add(feedback)
-    db.commit()
-    db.refresh(feedback)
-
-    return feedback
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.include_router(profiles_router)
+app.include_router(outfits_router)
+app.include_router(wardrobe_router)

@@ -1,6 +1,6 @@
 import anthropic
 import os
-from schemas import OutfitResponse, WardrobeAnalysisResponse, OutfitFeedback
+from outfits.schemas import OutfitResponse, OutfitFeedback
 import base64
 from fastapi import UploadFile
 from PIL import Image
@@ -112,45 +112,3 @@ def get_photo_feedback(profile, occasion, base64_image, media_type):
     )
 
     return message.content[0].input
-
-def get_wardrobe_analysis(base64_image, media_type):
-
-    schema = WardrobeAnalysisResponse.model_json_schema()
-
-    prompt = f"""You are a professional stylist. You have to define clothes that person is wearing and split them into categories with related colour, fit, style, ocassion"""
-
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1000,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": base64_image,
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        ],
-        tools=[
-            {
-                "name": "analyze_wardrobe",
-                "description": "Analyze and define clothes from the photo",
-                "input_schema": schema
-            }
-        ],
-        tool_choice={"type": "tool", "name": "analyze_wardrobe"}
-    )
-
-    return message.content[0].input
-
-

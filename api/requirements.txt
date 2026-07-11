@@ -7,3 +7,5 @@ python-dotenv
 python-multipart
 pillow-heif
 Pillow
+python-jose[cryptography]
+passlib[bcrypt]
