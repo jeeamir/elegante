@@ -5,6 +5,7 @@ from .schemas import UserRegister, UserLogin, Token
 from database import get_db
 from sqlalchemy.orm import Session
 from . import models as auth_models
+from fastapi.security import OAuth2PasswordRequestForm
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -29,13 +30,12 @@ async def register(request: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login")
-async def login(request: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(auth_models.User).filter(auth_models.User.email == request.email).first()
-
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(auth_models.User).filter(auth_models.User.email == form_data.username).first()
     if not user:
         raise HTTPException(status_code=401, detail="User does not exist")
 
-    check_password = verify_password(request.password, user.hashed_password)
+    check_password = verify_password(form_data.password, user.hashed_password)
 
     if not check_password:
         raise HTTPException(status_code=401, detail="Password is incorrect")
