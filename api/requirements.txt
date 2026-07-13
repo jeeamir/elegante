@@ -7,3 +7,6 @@ python-dotenv
 python-multipart
 pillow-heif
 Pillow
+pwdlib[argon2]
+pyjwt
+email-validator
