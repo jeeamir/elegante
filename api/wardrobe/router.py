@@ -7,14 +7,15 @@ from outfits.ai_service import encode_image
 from typing import List
 from profiles import models as profile_models
 from wardrobe import models as wardrobe_models
-
+from auth import models as auth_models
+from auth.service import get_current_user
 
 router = APIRouter(prefix="/wardrobe", tags=["wardrobe"])
 
 @router.post("/analyze-photo", response_model=List[WardrobeItemResponse])
-async def analyze_photo(profile_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def analyze_photo(current_user: auth_models.User = Depends(get_current_user), file: UploadFile = File(...), db: Session = Depends(get_db)):
 
-    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.id == profile_id).first()
+    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.user_id == current_user.id).first()
 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -26,7 +27,7 @@ async def analyze_photo(profile_id: int, file: UploadFile = File(...), db: Sessi
     wardrobe = []
 
     for item in result["items"]:
-        wardrobe_item = wardrobe_models.WardrobeItem(profile_id=profile_id, **item)
+        wardrobe_item = wardrobe_models.WardrobeItem(profile_id=profile.id, **item)
         db.add(wardrobe_item)
         wardrobe.append(wardrobe_item)
 

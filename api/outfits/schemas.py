@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 class OutfitRequest(BaseModel):
-    profile_id: int
     occasion: str
     mood: Optional[str] = None
 

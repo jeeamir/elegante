@@ -6,12 +6,14 @@ from outfits import models as outfit_models
 from profiles import models as profile_models
 from .ai_service import encode_image, get_photo_feedback, get_outfit_recommendation
 from typing import List
+from auth import models as auth_models
+from auth.service import get_current_user
 
 router = APIRouter(prefix="/outfits", tags=["outfits"])
 
 @router.post("/", response_model=OutfitHistoryResponse)
-async def get_outfit(request: OutfitRequest, db: Session = Depends(get_db)):
-    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.id == request.profile_id).first()
+async def get_outfit(request: OutfitRequest, current_user: auth_models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.user_id == current_user.id).first()
 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -19,7 +21,7 @@ async def get_outfit(request: OutfitRequest, db: Session = Depends(get_db)):
     result = get_outfit_recommendation(profile=profile, occasion=request.occasion, mood = request.mood)
 
     outfit_history = outfit_models.OutfitHistory(
-        profile_id=request.profile_id,
+        profile_id=profile.id,
         occasion=request.occasion,
         mood=request.mood,
         result=result
@@ -32,9 +34,9 @@ async def get_outfit(request: OutfitRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/photo-feedback", response_model=PhotoFeedbackResponse)
-async def photo_feedback(profile_id: int, occasion: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def photo_feedback(occasion: str, file: UploadFile = File(...), current_user: auth_models.User = Depends(get_current_user), db: Session = Depends(get_db)):
 
-    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.id == profile_id).first()
+    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.user_id == current_user.id).first()
 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -44,7 +46,7 @@ async def photo_feedback(profile_id: int, occasion: str, file: UploadFile = File
     result = get_photo_feedback(profile=profile, occasion=occasion, base64_image=base64_image, media_type=media_type)
 
     feedback = outfit_models.PhotoFeedback(
-        profile_id=profile_id,
+        profile_id=profile.id,
         occasion=occasion,
         feedback=result
     )
@@ -56,8 +58,15 @@ async def photo_feedback(profile_id: int, occasion: str, file: UploadFile = File
     return feedback
 
 
-@router.get("/profile/{profile_id}/history", response_model=List[OutfitHistoryResponse])
-async def get_outfits(profile_id: int, db: Session = Depends(get_db)):
-    history = db.query(outfit_models.OutfitHistory).filter(outfit_models.OutfitHistory.profile_id == profile_id).all()
+@router.get("/history", response_model=List[OutfitHistoryResponse])
+async def get_outfits(current_user: auth_models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    profile = db.query(profile_models.UserProfile).filter(profile_models.UserProfile.user_id == current_user.id).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    history = db.query(outfit_models.OutfitHistory).filter(outfit_models.OutfitHistory.profile_id == profile.id).all()
     return history
+
+
 
