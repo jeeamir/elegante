@@ -3,9 +3,11 @@ from database import Base, engine
 from profiles.router import router as profiles_router
 from outfits.router import router as outfits_router
 from wardrobe.router import router as wardrobe_router
+from auth.router import router as auth_router
 from profiles import models as profile_models
 from outfits import models as outfit_models
 from wardrobe import models as wardrobe_models
+from auth import models as auth_models
 
 def init_db():
     Base.metadata.create_all(bind=engine)
@@ -27,3 +29,4 @@ async def health():
 app.include_router(profiles_router)
 app.include_router(outfits_router)
 app.include_router(wardrobe_router)
+app.include_router(auth_router)

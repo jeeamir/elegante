@@ -6,6 +6,7 @@ class UserProfile(Base):
     __tablename__ = "profiles"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
     gender = Column(String, nullable=False)
     weight = Column(Integer)
