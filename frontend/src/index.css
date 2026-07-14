@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  /* ————— The Digital Atelier ————— */
+  /* Surfaces */
+  --color-ink: #111114;        /* base */
+  --color-raise: #17181c;      /* inputs, inset surfaces */
+  --color-graphite: #1b1c21;   /* panels, cards */
+  --color-seam: #2a2b31;       /* borders, dividers */
+  --color-seam-strong: #3a3b43;
+
+  /* Type */
+  --color-porcelain: #efece6;  /* primary text */
+  --color-mercury: #98979e;    /* secondary text */
+  --color-faint: #64636b;      /* tertiary / disabled */
+
+  /* The one accent — le fil rouge */
+  --color-lacquer: #d6453d;
+  --color-lacquer-bright: #e0655e;
+  --color-lacquer-dim: #8f322d;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+
+  /* Fluid display scale */
+  --text-display: clamp(2.5rem, 1.7rem + 3.4vw, 4.5rem);
+  --text-display--line-height: 1.04;
+  --text-title: clamp(1.75rem, 1.4rem + 1.5vw, 2.625rem);
+  --text-title--line-height: 1.1;
+  --text-h3: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
+  --text-h3--line-height: 1.2;
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.4;
+
+  --shadow-panel: 0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px -18px rgba(0,0,0,0.6);
+  --shadow-lift: 0 1px 0 rgba(255,255,255,0.04) inset, 0 18px 44px -20px rgba(0,0,0,0.75);
+}
+
+* { box-sizing: border-box; }
+
+html { color-scheme: dark; }
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-porcelain);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root { min-height: 100vh; min-height: 100dvh; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-seam-strong); border-radius: 3px; }
+
+::selection { background: var(--color-lacquer); color: #fbf9f4; }
+
+input, textarea, select, button { font-family: inherit; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-lacquer);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Atelier label — mono, uppercase, letterspaced */
+.spec {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Running stitch — marching dashes on any SVG path with this class */
+.stitching {
+  stroke-dasharray: 10 7;
+  animation: stitch-march 1.4s linear infinite;
+}
+@keyframes stitch-march {
+  to { stroke-dashoffset: -34; }
+}
+
+/* Thread pulse used by the tiny inline "working" indicator */
+.thread-pulse {
+  stroke-dasharray: 6 5;
+  animation: stitch-march 0.9s linear infinite;
+}
+
+/* Simple CSS reveal for non-orchestrated moments */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Respect prefers-reduced-motion — JS timelines also check this */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
